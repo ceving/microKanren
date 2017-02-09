@@ -1,13 +1,26 @@
 ;; Jason Hemann and Dan Friedman
 ;; microKanren, final implementation from paper
 
+(define (assp proc alist)
+  (if (pair? alist)
+      (let ((first (car alist)))
+        (if (pair? first)
+            (if (proc (car first))
+                first
+                (assp proc (cdr alist)))
+            #f))
+      #f))
+
 (define (var c) (vector c))
 (define (var? x) (vector? x))
 (define (var=? x1 x2) (= (vector-ref x1 0) (vector-ref x2 0)))
 
 (define (walk u s)
-  (let ((pr (and (var? u) (assp (lambda (v) (var=? u v)) s))))
-    (if pr (walk (cdr pr) s) u)))
+  (let ((pr (and (var? u)
+                 (assp (lambda (v) (var=? u v)) s))))
+    (if pr
+        (walk (cdr pr) s)
+        u)))
 
 (define (ext-s x v s) `((,x . ,v) . ,s))
 
@@ -20,7 +33,8 @@
 (define mzero '())
 
 (define (unify u v s)
-  (let ((u (walk u s)) (v (walk v s)))
+  (let ((u (walk u s))
+        (v (walk v s)))
     (cond
       ((and (var? u) (var? v) (var=? u v)) s)
       ((var? u) (ext-s u v s))
